@@ -7,7 +7,6 @@ class Magazine:
         self._name = name
         self._category = category
         
-        # If no ID is passed, insert into the database and auto-generate the ID
         if id is None:
             self.save()  # Automatically save to DB if the magazine doesn't exist
     
@@ -16,21 +15,17 @@ class Magazine:
         conn = sqlite3.connect('magazine.db')
         cursor = conn.cursor()
 
-        # Create the magazines table if it doesn't exist
         cursor.execute('''CREATE TABLE IF NOT EXISTS magazines
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, category TEXT)''')
 
         if self.id is None:
-            # Insert a new magazine into the database
             cursor.execute(''' 
                 INSERT INTO magazines (name, category) 
                 VALUES (?, ?)
             ''', (self.name, self.category))
 
-            # Get the auto-generated id and assign it to the instance
             self.id = cursor.lastrowid
         else:
-            # Update an existing magazine
             cursor.execute('''
                 UPDATE magazines 
                 SET name = ?, category = ? 
