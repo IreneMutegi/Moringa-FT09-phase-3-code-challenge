@@ -5,8 +5,8 @@ class Article:
         self.id = id
         self._title = title
         self._content = content
-        self.author_id = author_id 
-        self.magazine_id = magazine_id 
+        self.author_id = author_id
+        self.magazine_id = magazine_id
 
     @property
     def title(self):
@@ -34,7 +34,6 @@ class Article:
         return f'<Article {self.title}>'
 
     def save(self):
-        """Save the article to the database."""
         conn = get_db_connection()  
         cursor = conn.cursor()
 
@@ -42,7 +41,6 @@ class Article:
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, content TEXT, author_id INTEGER, magazine_id INTEGER)''')
 
         if self.id is None:
-            # Insert a new article
             cursor.execute(''' 
                 INSERT INTO articles (title, content, author_id, magazine_id)
                 VALUES (?, ?, ?, ?)
@@ -53,45 +51,52 @@ class Article:
             cursor.execute(''' 
                 UPDATE articles 
                 SET title = ?, content = ?, author_id = ?, magazine_id = ? 
-                WHERE id = ?
+                WHERE id = ? 
             ''', (self.title, self.content, self.author_id, self.magazine_id, self.id))
 
         conn.commit()
         conn.close()
 
-    def get_author(self):
-        """Fetch the author object for this article from the database."""
-        from .author import Author
-
+    @property
+    def author(self):
         conn = get_db_connection()  
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM authors WHERE id = ?", (self.author_id,))
+        cursor.execute('''
+            SELECT authors.id, authors.name 
+            FROM authors 
+            JOIN articles ON authors.id = articles.author_id
+            WHERE articles.id = ?
+        ''', (self.id,))
+
         author_data = cursor.fetchone()
         conn.close()
 
         if author_data:
-            return Author(*author_data)  
-        else:
-            return None  
+            return Author(id=author_data[0], name=author_data[1])
+        return None
 
-    def get_magazine(self):
-        """Fetch the magazine object for this article from the database."""
-        from .magazine import Magazine  
-        conn = get_db_connection() 
+    @property
+    def magazine(self):
+        conn = get_db_connection()  
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM magazines WHERE id = ?", (self.magazine_id,))
+        cursor.execute('''
+            SELECT magazines.id, magazines.name, magazines.category
+            FROM magazines
+            JOIN articles ON magazines.id = articles.magazine_id
+            WHERE articles.id = ?
+        ''', (self.id,))
+
         magazine_data = cursor.fetchone()
         conn.close()
 
         if magazine_data:
-            return Magazine(*magazine_data)  
-        else:
-            return None  
+            return Magazine(id=magazine_data[0], name=magazine_data[1], category=magazine_data[2])
+        return None
+
     @staticmethod
     def get_all():
-        """Fetch all articles from the database."""
         conn = get_db_connection()  
         cursor = conn.cursor()
 
